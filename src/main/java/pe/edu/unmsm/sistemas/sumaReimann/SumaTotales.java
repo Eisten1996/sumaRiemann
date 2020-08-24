@@ -8,34 +8,52 @@ import akka.event.LoggingAdapter;
 
 public class SumaTotales extends UntypedAbstractActor {
 
-	private ActorRef[] sumaParcial = new ActorRef[10];
+	private double sumaT = 0.0;
+	private int nObreros = 0;
+	private int iteraciones = 0;
+	private int contador = 0;
+	private double dx = 0.0;
+	private int a = 0;
+	private ActorRef[] actores;
 
-	public enum mensajes {
-		YA_ME_CREE, CREATE
+	public SumaTotales(int A, int B, int N, int it) {
+		// TODO Auto-generated constructor stub
+		this.iteraciones = N;
+		this.contador = it;
+		this.nObreros = it;
+		this.dx = (B - A) / (N * 1.0);
+		this.a = A;
 	}
 
 	LoggingAdapter log = Logging.getLogger(this.getContext().getSystem(), this);
 
 	@Override
 	public void preStart() throws Exception {
-
-		log.info("[Suma] iniciando {} ", this.getSelf().path());
+		// TODO Auto-generated method stub
+		log.info("Con {} iteraciones y {} actores", iteraciones, nObreros);
 		super.preStart();
-		for (int i = 0; i < 10; i++) {
-
-			sumaParcial[i] = getContext().actorOf(Props.create(SumaParcial.class), "SumaParcial" + i);
-			sumaParcial[i].tell(i + 1, this.getSelf());
+		actores = new ActorRef[nObreros];
+		for (int i = 0; i < nObreros; i++) {
+			actores[i] = this.getContext().actorOf(Props.create(SumaParcial.class), ("Obrero" + i));
 		}
-
+		int valor = iteraciones / nObreros;
+		for (int j = 0; j < nObreros; j++) {
+			actores[j].tell(new Tarea((valor * j), (valor * (j + 1)), dx, a), this.getSelf());
+		}
 	}
 
 	@Override
 	public void onReceive(Object message) throws Throwable {
-
-		if (message == mensajes.YA_ME_CREE) {
-			log.info("[Soldado] Arma Lista . . . ");
-			this.getContext().stop(getSelf());
+		// TODO Auto-generated method stub
+		if (message.getClass() == Double.class) {
+			if (contador > 1) {
+				sumaT += (Double) message;
+				contador--;
+			} else {
+				sumaT += (Double) message;
+				log.info("Resultado: " + sumaT);
+				this.getContext().stop(getSelf());
+			}
 		}
-
 	}
 }
